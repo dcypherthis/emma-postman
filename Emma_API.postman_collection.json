@@ -1,0 +1,1068 @@
+{
+	"variables": [],
+	"info": {
+		"name": "Emma API ",
+		"_postman_id": "76019b57-5a75-982b-da44-6f66debb842f",
+		"description": "## A word to the wise...\n\nUse the information on this page to set up and troubleshoot your API calls. If you are interested in paid API support, visit our [Custom Integrations](http://myemma.com/services/custom-integrations) page and fill out a request. Our system is monitored around the clock – and if there’s ever a dropped connection or outage, we’ll be sure to notify users on our [status page](http://myemma.com/status). \n\n***All JSON payloads must not exceed 10MB***\n\n## Overview\n\nEmma’s platform is accessible through our public API, which provides access to the following areas:\n\n- Managing member lists:\n  - Importing, editing and deleting\n  - Organizing members into groups\n  - Searching for members\n- Mailings:\n  - Viewing past mailings\n  - Controlling the status of pending mailings\n- Retrieving response:\n  - Accessing mailing response information by mailing or member of time period\n  - Accessing response at summary and detail levels\n\n## API wrappers\n\nEmma’s wrappers make it a breeze to connect to our API no matter which programming language you like to use. Just select your language and you’ll be able to integrate with Emma without the hassle of having to study all the ins and outs of our API first.\n\nThis collection is young (but growing!) and includes wrappers commissioned by Emma as well as some built by members of our community. Unless otherwise noted, all wrappers provide full coverage of our current API. If you see something that needs to be fixed or improved, please don’t hesitate submit a pull request. And if you’ve built a wrapper that you’d like to have listed here, [let us know!](integrations%40myemma.com)\n\n### PHP\n\n- [EmmaPHP](https://github.com/myemma/EmmaPHP) : Commissioned by Emma and built by Nashville developer [Dennis Monsewicz](https://github.com/dennismonsewicz).\n- [OhMyEmma](https://github.com/jwoodcock/OhMyEmma): Built by Nashville developer [Jacques Woodcock](https://github.com/jwoodcock).\n- [Emma](https://github.com/markroland/emma): Built by Nashville-based [Abenity, Inc](http://www.abenity.com/).\n\n### Python\n\n- [EmmaPython](https://github.com/myemma/EmmaPython): Built by Emma’s own [Doug Hurst](https://github.com/dalanhurst).\n\n### Ruby\n\n- [EmmaRuby](https://github.com/myemma/EmmaRuby): Commissioned by Emma and built by Nashville developer [Dennis Monsewicz](https://github.com/dennismonsewicz).\n\n### Objective-C\n\n- [EmmaSDK](https://github.com/myemma/EmmaSDK): Commissioned by Emma and built by Portland developer [Benjamin Van Der Veen](https://github.com/bvanderveen).\n\n### Node.js\n\n- [emma-sdk](https://github.com/nathanpeck/emma-sdk): Built by New York City developer [Nathan Peck](https://github.com/nathanpeck) for [StoryDesk](https://storydesk.com/).\n\n### .NET\n\n- [EmmaSharp](https://github.com/kylegregory/EmmaSharp): Built by developer [Kyle Gregory](https://github.com/kylegregory).\n\n\n## Quickstart\n\nLet’s get started by building some PHP code that will add a member to our audience.\n\nFirst, you’ll want to figure out how to authenticate (all calls require HTTP Basic Auth authentication). You’ll find your API keys inside your Emma account in the “Account Settings” section. There’s a public key, a private key and an account ID. It should look like this:\n\n\n![Emma Billing & Settings API Key](http://api.myemma.com/_images/api_key.png)\n\nNext, let’s add these authentication bits to our code.\n\n```php\n// Authentication Variables\n$account_id = \"xxx\";\n$public_api_key = \"xxx\";\n$private_api_key = \"xxx\";\n```\n\nThen we’ll want to capture the POSTed form variables from the request.\n\n```php\n// Form variable(s)\n$email = $_POST['email'];\n$first_name = $_POST['first_name'];\n$last_name = $_POST['last_name'];\n$groups = array(123456, 654321);\n\n// Member data other than email should be passed in an array called \"fields\"\n$member_data = array(\n  \"email\" => $email,\n  \"fields\" => array(\n    \"first_name\" => $first_name,\n    \"last_name\" => $last_name\n  ),\n  \"group_ids\" => $groups\n);\n```\n\nPlease note that the group_ids hat you’re adding members to are passed as an array of integers. In addition, you’ll always want to make sure that you sanitize any of these form inputs to protect your application.\n\nNow we’ll need to set the URL for the API call. The endpoint for all of our API calls is https://api.e2ma.net/. In this case, we’re using the endpoint that corresponds to adding a single member. There’s a separate call for adding bulk members.\n\n```php\n// Set URL\n$url = \"https://api.e2ma.net/\".$account_id.\"/members/add\";\n```\n\nNext, we’ll do a little dance with cURL that should look familiar to you. We’ll explain some particulars below the code block.\n\n```php\n// setup and execute the cURL command\n$ch = curl_init();\ncurl_setopt($ch, CURLOPT_USERPWD, $public_api_key . \":\" . $private_api_key);\ncurl_setopt($ch, CURLOPT_URL, $url);\ncurl_setopt($ch, CURLOPT_POST, count($member_data));\ncurl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($member_data));\ncurl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\ncurl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);\n$head = curl_exec($ch);\n$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);\ncurl_close($ch);\n```\n\nLine 3 is where we use the public/private keys to authenticate our call. On lines 6-7, we force the API call to make its request in JSON and expect JSON in return.\n\nAt this point, the API call has been made. We might also want to inspect the result to see what happened. The API returns true HTTP response codes that you can examine to determine a request’s disposition.\n\n```php\n//execute post\nif($http_code > 200) {\n  $app_message = \"Error sending subscription request\";\n} else {\n  $app_message = \"Success!\";\n}\n\necho $app_message;\n```\n\nYou can [see the complete PHP script here](http://api.myemma.com/php_signup_example.html). There’s also a PHP example to [get members using their email address](http://api.myemma.com/php_get_member_example.html).\n\nTo extend this example further, you could make the API call associate the new member with a particular signup form. As written above, the member would be added to the audience but would not appear in the “recent activity” type searches or really any searches related to signups. Don’t worry – we’re currently working on a cleaner way to handle this signup form issue in the future.\n\n## API calls by category\n\nIn the following sections, we’ve organized API calls by their main entity type. Each call includes sample request and response data.\n\n- Fields\n- Groups\n- Mailings\n- Members\n- Response\n- Searches\n- Signup Forms\n- Webhooks\n\n## API rate limit\n\nTo prevent accidental overuse, calls to Emma's API are limited to **180 calls per minute**. If you exceed the limit, you‘ll receive a response of `403 Rate Limit Exceeded` until enough time has elapsed between calls.\n\n## Additional documentation\n\n- [Pagination](http://api.myemma.com/pagination.html)\n- [Placeholder Syntax](http://api.myemma.com/placeholders.html)\n  - [Syntax Overview](http://api.myemma.com/placeholders.html#syntax-overview)\n- [Search Syntax](http://api.myemma.com/member_search.html)\n  - [Syntax Overview](http://api.myemma.com/member_search.html#syntax-overview)\n  - [Operators](http://api.myemma.com/member_search.html#operators)\n  - [Boolean Predicates](http://api.myemma.com/member_search.html#boolean-predicates)\n  - [Filter Terms](http://api.myemma.com/member_search.html#filter-terms)\n- [Webhook Usage](http://api.myemma.com/webhooks.html)\n  - [Webhook Overview](http://api.myemma.com/webhooks.html#webhook-overview)\n  - [Webhook Post Data](http://api.myemma.com/webhooks.html#webhook-post-data)\n",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Fields",
+			"description": "These endpoints let you create, edit, update and delete all of the custom fields in your account. Of particular interest is the `/#account_id/fields/#field_id/clear` endpoint which lets you clear out all the data in a single field for all members in your account. This makes it easy to re-initialize a dataset if you’re looking to correct an import error or syncing issue.",
+			"item": [
+				{
+					"name": "Get All Fields",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/fields",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Gets a list of this account’s defined fields.*\n\n**Parameters:**\t\n - **deleted** (*boolean*) – Accepts True or 1. Optional flag to include deleted fields.\n\n**Returns:** An array of fields."
+					},
+					"response": [
+						{
+							"id": "91e66df9-db7a-48fe-b707-8cf2e4b3a0ba",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/fields",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  {\n    \"shortcut_name\": \"first_name\",\n    \"display_name\": \"First Name\",\n    \"account_id\": 100,\n    \"field_type\": \"text\",\n    \"required\": false,\n    \"field_id\": 200,\n    \"widget_type\": \"text\",\n    \"short_display_name\": null,\n    \"column_order\": 1,\n    \"deleted_at\": null,\n    \"options\": null\n  },\n  {\n    \"shortcut_name\": \"last_name\",\n    \"display_name\": \"Last Name\",\n    \"account_id\": 100,\n    \"field_type\": \"text\",\n    \"required\": false,\n    \"field_id\": 201,\n    \"widget_type\": \"text\",\n    \"short_display_name\": null,\n    \"column_order\": 2,\n    \"deleted_at\": null,\n    \"options\": null\n  },\n  {\n    \"shortcut_name\": \"favorite_food\",\n    \"display_name\": \"Favorite Food\",\n    \"account_id\": 100,\n    \"field_type\": \"text\",\n    \"required\": false,\n    \"field_id\": 202,\n    \"widget_type\": \"text\",\n    \"short_display_name\": null,\n    \"column_order\": 3,\n    \"deleted_at\": null,\n    \"options\": null\n  },\n  {\n    \"shortcut_name\": \"birthday\",\n    \"display_name\": \"Birthday\",\n    \"account_id\": 100,\n    \"field_type\": \"date\",\n    \"required\": false,\n    \"field_id\": 203,\n    \"widget_type\": \"date\",\n    \"short_display_name\": null,\n    \"column_order\": 4,\n    \"deleted_at\": null,\n    \"options\": null\n  }\n]\n"
+						},
+						{
+							"id": "704e6622-0c2e-4485-a715-59b061d57aa4",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/fields",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  {\n    \"shortcut_name\": \"first_name\",\n    \"display_name\": \"First Name\",\n    \"account_id\": 100,\n    \"field_type\": \"text\",\n    \"required\": false,\n    \"field_id\": 200,\n    \"widget_type\": \"text\",\n    \"short_display_name\": null,\n    \"column_order\": 1,\n    \"deleted_at\": null,\n    \"options\": null\n  },\n  {\n    \"shortcut_name\": \"last_name\",\n    \"display_name\": \"Last Name\",\n    \"account_id\": 100,\n    \"field_type\": \"text\",\n    \"required\": false,\n    \"field_id\": 201,\n    \"widget_type\": \"text\",\n    \"short_display_name\": null,\n    \"column_order\": 2,\n    \"deleted_at\": null,\n    \"options\": null\n  },\n  {\n    \"shortcut_name\": \"favorite_food\",\n    \"display_name\": \"Favorite Food\",\n    \"account_id\": 100,\n    \"field_type\": \"text\",\n    \"required\": false,\n    \"field_id\": 202,\n    \"widget_type\": \"text\",\n    \"short_display_name\": null,\n    \"column_order\": 3,\n    \"deleted_at\": null,\n    \"options\": null\n  },\n  {\n    \"shortcut_name\": \"birthday\",\n    \"display_name\": \"Birthday\",\n    \"account_id\": 100,\n    \"field_type\": \"date\",\n    \"required\": false,\n    \"field_id\": 203,\n    \"widget_type\": \"date\",\n    \"short_display_name\": null,\n    \"column_order\": 4,\n    \"deleted_at\": null,\n    \"options\": null\n  }\n]\n"
+						}
+					]
+				},
+				{
+					"name": "Get Field By Id",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/fields/#field_id",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Gets the detailed information about a particular field.*\n\n**Parameters:**\t\n- **deleted** (*boolean*) – Accepts True or 1. Optionally show a field even if it has been deleted.\n\n**Returns:** A field.\n\n**Raises:**\t`Http404` if the field does not exist."
+					},
+					"response": [
+						{
+							"id": "02447b8b-c4ce-4981-ab29-8e16ae06e0ff",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/fields/200",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "{\n  \"shortcut_name\": \"first_name\", \n  \"display_name\": \"First Name\", \n  \"account_id\": 100, \n  \"field_type\": \"text\", \n  \"required\": false, \n  \"field_id\": 200, \n  \"widget_type\": \"text\", \n  \"short_display_name\": null, \n  \"column_order\": 1, \n  \"deleted_at\": null, \n  \"options\": null\n}"
+						}
+					]
+				},
+				{
+					"name": "Create New Field",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/fields",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"shortcut_name\": \"new_boolean\", \n  \"column_order\": 3, \n  \"display_name\": \"A New Boolean Field\", \n  \"field_type\": \"boolean\"\n  \"widget_type\": \"boolean\"\n}"
+						},
+						"description": "*Create a new field field.*\n\nThere must not already be a field with this name.\n\n**Parameters:**\n - **shortcut_name** (*string*) – The internal name for this field.\n - **display_name** (*string*) – Display name, used for forms and reports.\n- **field_type** (*string*) – The type of value this field will contain. Accepts one of text, text[], numeric, boolean, date, timestamp.\n- **widget_type** (*string*) – The type of widget this field will display as. Accepts one of `text, long, checkbox, select multiple, check_multiple, radio, date, select one, number`.\n- **column_order** (*integer*) – Order of this column in lists.\n\n**Returns:** A reference to the new field."
+					},
+					"response": [
+						{
+							"id": "0fc68f91-813c-4cbe-b05f-b5235cc8b9b5",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/fields",
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"value": "application/json",
+										"description": ""
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"shortcut_name\": \"new_boolean\", \n  \"column_order\": 3, \n  \"display_name\": \"A New Boolean Field\", \n  \"field_type\": \"boolean\"\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "1024"
+						}
+					]
+				},
+				{
+					"name": "Delete Field",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/fields/#field_id",
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Deletes a field.*\n\n**Returns:** True if the field is deleted, False otherwise."
+					},
+					"response": [
+						{
+							"id": "0c192bea-71bf-4e79-a608-790a4fdc9773",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/fields/200",
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "true"
+						}
+					]
+				},
+				{
+					"name": "Clear Member Data For Field",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/fields/#field_id/clear",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Clear the member data for the specified field.*\n\n**Returns:** True if all of the member field data is deleted."
+					},
+					"response": [
+						{
+							"id": "d8b55301-1ba0-48d6-af2d-4b7dcf834d12",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/fields/200/clear",
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "true"
+						}
+					]
+				},
+				{
+					"name": "Update Field",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/fields/#field_id",
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": "*Updates an existing field.*\n\n**Returns:** A reference to the updated field."
+					},
+					"response": [
+						{
+							"id": "4a81a28d-ae0a-481f-9e96-b8ae9b52b351",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/fields/202",
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"value": "application/json",
+										"description": ""
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								}
+							},
+							"status": "Accepted",
+							"code": 202,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "text",
+							"header": [],
+							"cookie": [],
+							"responseTime": 373,
+							"body": "{\n  \"display_name\": \"Your Birthday\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Groups",
+			"description": "With these endpoints, you can manage all aspects of the groups in your account. In addition to various CRUD methods, you can also use these endpoints to manage the members of your groups. You’ll want to use these methods if you’re managing group membership for more than one member at a time. For dealing with single members, there are better methods in the `members` endpoints.\n\n",
+			"item": [
+				{
+					"name": "Get All Groups",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"",
+									""
+								]
+							}
+						}
+					],
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Get a basic listing of all active member groups for a single account.*\n\n**Returns:** An array of groups.\n\n**Parameters:**\t\n - **group_types** (*string*) – Accepts a comma-separated string with one or more of the following group_types (defaults to `g`): \n   - `g` (*group*)\n   - `t` (*test*)\n   - `h` (*hidden*)\n   - `all` (*all*)"
+					},
+					"response": [
+						{
+							"id": "a760af87-8e26-4c7a-b572-18d1c6a2af3b",
+							"name": "Standard & Hidden Groups",
+							"originalRequest": {
+								"url": {
+									"raw": "https://api.e2ma.net/{{account_id}}/groups?group_types=g,t",
+									"protocol": "https",
+									"host": [
+										"api",
+										"e2ma",
+										"net"
+									],
+									"path": [
+										"{{account_id}}",
+										"groups"
+									],
+									"query": [
+										{
+											"key": "group_types",
+											"value": "g,t",
+											"equals": true,
+											"description": ""
+										}
+									],
+									"variable": []
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  {\n    \"active_count\": 1,\n    \"deleted_at\": null,\n    \"error_count\": 0,\n    \"optout_count\": 1,\n    \"group_type\": \"g\",\n    \"member_group_id\": 150,\n    \"purged_at\": null,\n    \"account_id\": 100,\n    \"group_name\": \"Monthly Newsletter\"\n  },\n  {\n    \"active_count\": 2,\n    \"deleted_at\": null,\n    \"error_count\": 0,\n    \"optout_count\": 0,\n    \"group_type\": \"g\",\n    \"member_group_id\": 151,\n    \"purged_at\": null,\n    \"account_id\": 100,\n    \"group_name\": \"Widget Buyers\"\n  },\n  {\n    \"active_count\": 4,\n    \"deleted_at\": null,\n    \"error_count\": 0,\n    \"optout_count\": 0,\n    \"group_type\": \"g\",\n    \"member_group_id\": 152,\n    \"purged_at\": null,\n    \"account_id\": 100,\n    \"group_name\": \"Special Events\"\n  }\n]"
+						},
+						{
+							"id": "8c7cd4ca-0063-4064-90d5-057ebd8010c6",
+							"name": "All Group Types",
+							"originalRequest": {
+								"url": {
+									"raw": "https://api.e2ma.net/{{account_id}}/groups?group_types=all",
+									"protocol": "https",
+									"host": [
+										"api",
+										"e2ma",
+										"net"
+									],
+									"path": [
+										"{{account_id}}",
+										"groups"
+									],
+									"query": [
+										{
+											"key": "group_types",
+											"value": "all",
+											"equals": true,
+											"description": ""
+										}
+									],
+									"variable": []
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  {\n    \"active_count\": 1,\n    \"deleted_at\": null,\n    \"error_count\": 0,\n    \"optout_count\": 1,\n    \"group_type\": \"g\",\n    \"member_group_id\": 150,\n    \"purged_at\": null,\n    \"account_id\": 100,\n    \"group_name\": \"Monthly Newsletter\"\n  },\n  {\n    \"active_count\": 2,\n    \"deleted_at\": null,\n    \"error_count\": 0,\n    \"optout_count\": 0,\n    \"group_type\": \"g\",\n    \"member_group_id\": 151,\n    \"purged_at\": null,\n    \"account_id\": 100,\n    \"group_name\": \"Widget Buyers\"\n  },\n  {\n    \"active_count\": 4,\n    \"deleted_at\": null,\n    \"error_count\": 0,\n    \"optout_count\": 0,\n    \"group_type\": \"g\",\n    \"member_group_id\": 152,\n    \"purged_at\": null,\n    \"account_id\": 100,\n    \"group_name\": \"Special Events\"\n  }\n]"
+						}
+					]
+				},
+				{
+					"name": "Create Groups",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groups\": [\n    {\n      \"group_name\": \"My Grp\"\n    }\n  ]\n}"
+						},
+						"description": "*Create one or more new member groups.*\n\n**Returns:** An array of the new group ids and group names.\n\n**Parameters:**\t\n- **groups** (*array*) – An array of group objects. Each object must contain a `group_name` parameter.\n"
+					},
+					"response": [
+						{
+							"id": "3ed094fe-51fd-496f-b00c-7645295633ca",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups",
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"description": ""
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"groups\": [\n    {\n      \"group_name\": \"My Grp\"\n    }\n  ]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  {\n    \"member_group_id\": 1024, \n    \"group_name\": \"My Grp\"\n  }\n]"
+						}
+					]
+				},
+				{
+					"name": "Get Group By Id",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Get the detailed information for a single member group.*\n\n**Returns:** A group.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "432a5428-63a5-43f8-a875-a52060c4277d",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/150",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "{\n  \"active_count\": 1, \n  \"deleted_at\": null, \n  \"error_count\": 0, \n  \"optout_count\": 1, \n  \"group_type\": \"g\", \n  \"member_group_id\": 150, \n  \"purged_at\": null, \n  \"account_id\": 100, \n  \"group_name\": \"Monthly Newsletter\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Group",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id",
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"group_name\": \"New Group Name\"\n}"
+						},
+						"description": "*Update information for a single member group.*\n\n**Parameters:**\n- **group_name** (*string*) – Updated group name.\n\n**Returns:** True if the update was successful\n\n**Raises:** `Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "cfce63ea-49f9-43a7-9e88-a6bef31f53f2",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/150",
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"description": ""
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"group_name\": \"New Group Name\"\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "true"
+						}
+					]
+				},
+				{
+					"name": "Delete Group",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id",
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Delete a single member group.*\n\n**Returns:** True if the group is deleted.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "06bfe6ef-28d9-4a19-99c1-d52c2e3dc334",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/150",
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "true"
+						}
+					]
+				},
+				{
+					"name": "Get Members In Group",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id/members",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Get the members in a single active member group.*\n\n**Returns:** An array of members.\n\n**Parameters:**\n - **deleted** (*boolean*) – include deleted members. Optional, defaults to false.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "1ab9378d-6595-4f7e-ac57-6e876dd5ebf0",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/150/members",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  {\n    \"status\": \"active\",\n    \"confirmed_opt_in\": null,\n    \"account_id\": 100,\n    \"fields\": {\n      \"first_name\": \"Emma\",\n      \"last_name\": \"Smith\",\n      \"favorite_food\": \"tacos\"\n    },\n    \"member_id\": 200,\n    \"last_modified_at\": null,\n    \"member_status_id\": \"a\",\n    \"plaintext_preferred\": false,\n    \"email_error\": null,\n    \"member_since\": \"@D:2010-11-12T11:23:45\",\n    \"bounce_count\": 0,\n    \"deleted_at\": null,\n    \"email\": \"emma@myemma.com\"\n  },\n  {\n    \"status\": \"opt-out\",\n    \"confirmed_opt_in\": null,\n    \"account_id\": 100,\n    \"fields\": {\n      \"first_name\": \"Gladys\",\n      \"last_name\": \"Jones\",\n      \"favorite_food\": \"toast\"\n    },\n    \"member_id\": 201,\n    \"last_modified_at\": null,\n    \"member_status_id\": \"o\",\n    \"plaintext_preferred\": false,\n    \"email_error\": null,\n    \"member_since\": \"@D:2011-01-03T15:54:13\",\n    \"bounce_count\": 0,\n    \"deleted_at\": null,\n    \"email\": \"gladys@myemma.com\"\n  }\n]\n"
+						}
+					]
+				},
+				{
+					"name": "Add Members to Group",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id/members",
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"member_ids\": [\n    202\n  ]\n}"
+						},
+						"description": "*Add a list of members to a single active member group.*\n\n**Parameters:**\n - **member_ids** (*array*) – An array of member ids.\n\n**Returns:** An array of references to the members added to the group. If a member already exists in the group or is not a valid member, that reference will not be returned.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "4cf7d2d9-1fe2-47f1-990f-83b99dead911",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/150/members",
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"value": "application/json",
+										"description": ""
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"member_ids\": [\n    202\n  ]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  202\n]"
+						}
+					]
+				},
+				{
+					"name": "Remove Members From Group",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id/members/remove",
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"member_ids\": [\n    200, \n    201\n  ]\n}"
+						},
+						"description": "*Remove members from a single active member group.*\n\n**Parameters:**\n - **member_ids** (*array*) – An array of member ids.\n\n**Returns:** An array of references to the removed members.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "c32fe5f2-9f67-4be0-b69c-246a3b453412",
+							"name": "Sample Response",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/150/members/remove",
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"description": ""
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"member_ids\": [\n    200, \n    201\n  ]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "[\n  200, \n  201\n]"
+						}
+					]
+				},
+				{
+					"name": "Delete All Members From Group",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id/members",
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Remove all members from a single active member group.*\n\n**Parameters:**\n- **member_status_id** (*string*) – Optional.\n  - `a` (*active*)\n  - `o` (*optout*)\n  - `e` (*error*)\n\n**Returns:** The number of members removed from the group.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "b9aa32be-7d1d-4174-a827-c06a18ac90d0",
+							"name": "Delete All Members",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/150/members",
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "2"
+						},
+						{
+							"id": "d7182325-3e08-4b9c-86ec-109209f81332",
+							"name": "Delete Only Active Members",
+							"originalRequest": {
+								"url": {
+									"raw": "https://api.e2ma.net/{{account_id}}/groups/150/members?member_status_id=a",
+									"protocol": "https",
+									"host": [
+										"api",
+										"e2ma",
+										"net"
+									],
+									"path": [
+										"{{account_id}}",
+										"groups",
+										"150",
+										"members"
+									],
+									"query": [
+										{
+											"key": "member_status_id",
+											"value": "a",
+											"equals": true,
+											"description": ""
+										}
+									],
+									"variable": []
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "2"
+						}
+					]
+				},
+				{
+					"name": "Delete All Members From Group With Specific Status",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id/members/remove",
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Delete all members in this group with the specified status. Remove those members from all groups as a background job. The `member_status_id` parameter must be set.*\n\n**Parameters:**\n- **member_status_id** (*string*) – Optional.\n  - `a` (*active*)\n  - `o` (*optout*)\n  - `e` (*error*)\n\n**Returns:** True.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "f9ecc942-0a20-4c12-90cc-eb50ded5bacd",
+							"name": "Delete Members Who Are Active",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/#member_group_id/members/remove?member_status_id=a",
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									}
+								],
+								"body": {}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "true"
+						}
+					]
+				},
+				{
+					"name": "Copy Members to Another Group",
+					"request": {
+						"url": "https://api.e2ma.net/{{account_id}}/groups/#from_group_id/#to_group_id/members/copy",
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Basic {{public_api_key}}:{{private_api_key}}",
+								"description": "Converts to b64 for Authenticating the Emma Public API"
+							}
+						],
+						"body": {},
+						"description": "*Copy all the users of one group into another group.*\n\n**Parameters:**\n- **member_status_id** (*string*) – Optional.\n  - `a` (*active*)\n  - `o` (*optout*)\n  - `e` (*error*)\n\n**Returns:** True.\n\n**Raises:**\t`Http404` if the group does not exist."
+					},
+					"response": [
+						{
+							"id": "c2988320-aad0-48fa-87e5-eb34759b8a24",
+							"name": "Copy Active Users To Another Group",
+							"originalRequest": {
+								"url": "https://api.e2ma.net/{{account_id}}/groups/151/152/members/copy",
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Basic {{public_api_key}}:{{private_api_key}}",
+										"description": "Converts to b64 for Authenticating the Emma Public API"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"description": ""
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"member_status_id\": [\n    \"a\"\n  ]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"_postman_previewtype": "parsed",
+							"header": [],
+							"cookie": [],
+							"responseTime": 0,
+							"body": "true"
+						}
+					]
+				}
+			]
+		}
+	]
+}
