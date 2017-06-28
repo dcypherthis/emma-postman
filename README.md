@@ -1,6 +1,9 @@
 # Emma Postman
 
-A Postman Collection repository for all Emma API Endpoints. The official API docs are found at http://api.myemma.com/.
+A Postman Collection repository for all Emma API Endpoints. 
+
+- Official API Docs: http://api.myemma.com/
+- Published Postman Collection Docs: https://documenter.getpostman.com/view/278059/emma-api/6fTzk3m#e2b74818-a0ce-7652-d3be-018ee519a3a8 
 
 ## How to use?
 
