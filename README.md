@@ -1,7 +1,5 @@
 # Emma Postman
 
-?
-
 A Postman Collection repository for all Emma API Endpoints. 
 
 - Official API Docs: http://api.myemma.com/
